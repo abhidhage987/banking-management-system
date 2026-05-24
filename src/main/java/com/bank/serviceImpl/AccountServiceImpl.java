@@ -12,6 +12,8 @@ import com.bank.dto.TransactionRequest;
 import com.bank.dto.TransferRequest;
 import com.bank.entity.Transaction;
 import com.bank.enums.TransactionType;
+import com.bank.exception.InsufficientBalanceException;
+import com.bank.exception.ResourceNotFoundException;
 import com.bank.repository.TransactionRepository;
 
 import org.springframework.transaction.annotation.Transactional;
@@ -20,147 +22,155 @@ import java.time.LocalDateTime;
 
 import java.util.Random;
 
+import com.bank.dto.TransactionResponse;
+import java.util.ArrayList;
+import java.util.List;
+
 @Service
 
 public class AccountServiceImpl implements AccountService {
 
-    private final AccountRepository accountRepository;
-    private final UserRepository userRepository;
-    private final TransactionRepository transactionRepository;
+	private final AccountRepository accountRepository;
+	private final UserRepository userRepository;
+	private final TransactionRepository transactionRepository;
 
-    public AccountServiceImpl(AccountRepository accountRepository,
-            UserRepository userRepository,
-            TransactionRepository transactionRepository) {
+	public AccountServiceImpl(AccountRepository accountRepository, UserRepository userRepository,
+			TransactionRepository transactionRepository) {
 
-this.accountRepository = accountRepository;
-this.userRepository = userRepository;
-this.transactionRepository = transactionRepository;
-}
-    @Override
-    public String createAccount(AccountRequest request, String email) {
+		this.accountRepository = accountRepository;
+		this.userRepository = userRepository;
+		this.transactionRepository = transactionRepository;
+	}
 
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new RuntimeException("User not found"));
+	@Override
+	public String createAccount(AccountRequest request, String email) {
 
-        Account account = new Account();
+		User user = userRepository.findByEmail(email)
+				.orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        account.setAccountNumber(generateAccountNumber());
-        account.setBalance(request.getInitialBalance());
-        account.setAccountType(request.getAccountType());
-        account.setStatus(AccountStatus.ACTIVE);
-        account.setUser(user);
+		Account account = new Account();
 
-        accountRepository.save(account);
+		account.setAccountNumber(generateAccountNumber());
+		account.setBalance(request.getInitialBalance());
+		account.setAccountType(request.getAccountType());
+		account.setStatus(AccountStatus.ACTIVE);
+		account.setUser(user);
 
-        return "Account Created Successfully";
-    }
+		accountRepository.save(account);
 
-    
-    private String generateAccountNumber() {
+		return "Account Created Successfully";
+	}
 
-        Random random = new Random();
+	private String generateAccountNumber() {
 
-        return "ACC" + (100000 + random.nextInt(900000));
-    }
-    
-    @Override
-    public String deposit(TransactionRequest request) {
+		Random random = new Random();
 
-        Account account = accountRepository
-                .findByAccountNumber(request.getAccountNumber())
-                .orElseThrow(() ->
-                        new RuntimeException("Account not found"));
+		return "ACC" + (100000 + random.nextInt(900000));
+	}
 
-        account.setBalance(
-                account.getBalance() + request.getAmount()
-        );
+	@Override
+	public String deposit(TransactionRequest request) {
 
-        accountRepository.save(account);
+		Account account = accountRepository.findByAccountNumber(request.getAccountNumber())
+				.orElseThrow(() -> new ResourceNotFoundException("Account not found"));
 
-        return "Amount Deposited Successfully";
-    }
-    
-    @Override
-    public String withdraw(TransactionRequest request) {
+		account.setBalance(account.getBalance() + request.getAmount());
 
-        Account account = accountRepository
-                .findByAccountNumber(request.getAccountNumber())
-                .orElseThrow(() ->
-                        new RuntimeException("Account not found"));
+		accountRepository.save(account);
 
-        if(account.getBalance() < request.getAmount()) {
+		return "Amount Deposited Successfully";
+	}
 
-            throw new RuntimeException("Insufficient Balance");
-        }
+	@Override
+	public String withdraw(TransactionRequest request) {
 
-        account.setBalance(
-                account.getBalance() - request.getAmount()
-        );
+		Account account = accountRepository.findByAccountNumber(request.getAccountNumber())
+				.orElseThrow(() -> new ResourceNotFoundException("Account not found"));
 
-        accountRepository.save(account);
+		if (account.getBalance() < request.getAmount()) {
 
-        return "Amount Withdrawn Successfully";
-    }
-    
-    @Override
-    public Double checkBalance(String accountNumber) {
+			throw new InsufficientBalanceException("Insufficient Balance");
+		}
 
-        Account account = accountRepository
-                .findByAccountNumber(accountNumber)
-                .orElseThrow(() ->
-                        new RuntimeException("Account not found"));
+		account.setBalance(account.getBalance() - request.getAmount());
 
-        return account.getBalance();
-    }
-    
-    @Override
-    @Transactional
+		accountRepository.save(account);
 
-    public String transferMoney(TransferRequest request) {
+		return "Amount Withdrawn Successfully";
+	}
 
-        Account senderAccount = accountRepository
-                .findByAccountNumber(request.getSenderAccount())
-                .orElseThrow(() ->
-                        new RuntimeException("Sender Account Not Found"));
+	@Override
+	public Double checkBalance(String accountNumber) {
 
-        Account receiverAccount = accountRepository
-                .findByAccountNumber(request.getReceiverAccount())
-                .orElseThrow(() ->
-                        new RuntimeException("Receiver Account Not Found"));
+		Account account = accountRepository.findByAccountNumber(accountNumber)
+				.orElseThrow(() -> new ResourceNotFoundException("Account not found"));
 
-        
-        if(senderAccount.getBalance() < request.getAmount()) {
+		return account.getBalance();
+	}
 
-            throw new RuntimeException("Insufficient Balance");
-        }
+	@Override
+	@Transactional
 
-       
-        senderAccount.setBalance(
-                senderAccount.getBalance() - request.getAmount()
-        );
+	public String transferMoney(TransferRequest request) {
 
-        
-        receiverAccount.setBalance(
-                receiverAccount.getBalance() + request.getAmount()
-        );
+		Account senderAccount = accountRepository.findByAccountNumber(request.getSenderAccount())
+				.orElseThrow(() -> new ResourceNotFoundException("Sender Account Not Found"));
 
-        
-        accountRepository.save(senderAccount);
-        accountRepository.save(receiverAccount);
+		Account receiverAccount = accountRepository.findByAccountNumber(request.getReceiverAccount())
+				.orElseThrow(() -> new ResourceNotFoundException("Receiver Account Not Found"));
 
-        
-        Transaction transaction = new Transaction();
+		if (senderAccount.getBalance() < request.getAmount()) {
 
-        transaction.setSenderAccount(request.getSenderAccount());
-        transaction.setReceiverAccount(request.getReceiverAccount());
-        transaction.setAmount(request.getAmount());
-        transaction.setTransactionType(TransactionType.TRANSFER);
-        transaction.setTransactionDate(LocalDateTime.now());
+			throw new InsufficientBalanceException("Insufficient Balance");
+		}
 
-        transactionRepository.save(transaction);
+		senderAccount.setBalance(senderAccount.getBalance() - request.getAmount());
 
-        return "Money Transferred Successfully";
-    }
-    
+		receiverAccount.setBalance(receiverAccount.getBalance() + request.getAmount());
+
+		accountRepository.save(senderAccount);
+		accountRepository.save(receiverAccount);
+
+		Transaction transaction = new Transaction();
+
+		transaction.setSenderAccount(request.getSenderAccount());
+		transaction.setReceiverAccount(request.getReceiverAccount());
+		transaction.setAmount(request.getAmount());
+		transaction.setTransactionType(TransactionType.TRANSFER);
+		transaction.setTransactionDate(LocalDateTime.now());
+
+		transactionRepository.save(transaction);
+
+		return "Money Transferred Successfully";
+	}
+
+	@Override
+
+	public List<TransactionResponse> getTransactionHistory(String accountNumber) {
+
+		List<Transaction> transactions = transactionRepository.findBySenderAccountOrReceiverAccount(accountNumber,
+				accountNumber);
+
+		List<TransactionResponse> responseList = new ArrayList<>();
+
+		for (Transaction transaction : transactions) {
+
+			TransactionResponse response = new TransactionResponse();
+
+			response.setSenderAccount(transaction.getSenderAccount());
+
+			response.setReceiverAccount(transaction.getReceiverAccount());
+
+			response.setAmount(transaction.getAmount());
+
+			response.setTransactionType(transaction.getTransactionType().name());
+
+			response.setTransactionDate(transaction.getTransactionDate());
+
+			responseList.add(response);
+		}
+
+		return responseList;
+	}
+
 }

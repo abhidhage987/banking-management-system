@@ -1,18 +1,25 @@
 package com.bank.service;
 
+
+
+import com.bank.dto.TransactionResponse;
+import java.util.List;
+
 import com.bank.dto.AccountRequest;
 import com.bank.dto.TransactionRequest;
 import com.bank.dto.TransferRequest;
 
 public interface AccountService {
 
-    String createAccount(AccountRequest request, String email);
+	String createAccount(AccountRequest request, String email);
 
-    String deposit(TransactionRequest request);
+	String deposit(TransactionRequest request);
 
-    String withdraw(TransactionRequest request);
+	String withdraw(TransactionRequest request);
 
-    Double checkBalance(String accountNumber);
-    
-    String transferMoney(TransferRequest request);
+	Double checkBalance(String accountNumber);
+
+	String transferMoney(TransferRequest request);
+
+	List<TransactionResponse> getTransactionHistory(String accountNumber);
 }

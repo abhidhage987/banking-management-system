@@ -1,25 +1,20 @@
 package com.bank.dto;
 
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import java.time.LocalDateTime;
 
-public class TransferRequest {
+public class TransactionResponse {
 
-    @NotBlank(message = "Sender Account is required")
     private String senderAccount;
 
-    @NotBlank(message = "Receiver Account is required")
     private String receiverAccount;
-
-    @NotNull(message = "Amount is required")
-
-    @Min(value = 1,
-            message = "Amount must be greater than 0")
 
     private Double amount;
 
-    public TransferRequest() {
+    private String transactionType;
+
+    private LocalDateTime transactionDate;
+
+    public TransactionResponse() {
     }
 
     public String getSenderAccount() {
@@ -44,5 +39,21 @@ public class TransferRequest {
 
     public void setAmount(Double amount) {
         this.amount = amount;
+    }
+
+    public String getTransactionType() {
+        return transactionType;
+    }
+
+    public void setTransactionType(String transactionType) {
+        this.transactionType = transactionType;
+    }
+
+    public LocalDateTime getTransactionDate() {
+        return transactionDate;
+    }
+
+    public void setTransactionDate(LocalDateTime transactionDate) {
+        this.transactionDate = transactionDate;
     }
 }

@@ -6,9 +6,14 @@ import com.bank.dto.TransferRequest;
 import com.bank.security.JwtUtil;
 import com.bank.service.AccountService;
 
+import jakarta.validation.Valid;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import com.bank.dto.TransactionResponse;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/account")
@@ -27,7 +32,7 @@ public class AccountController {
 	@PostMapping("/create")
 	public ResponseEntity<String> createAccount(
 
-			@RequestBody AccountRequest request, @RequestHeader("Authorization") String authHeader) {
+			@Valid	@RequestBody AccountRequest request, @RequestHeader("Authorization") String authHeader) {
 
 		String token = authHeader.substring(7);
 
@@ -41,7 +46,7 @@ public class AccountController {
 	@PostMapping("/deposit")
 	public ResponseEntity<String> depositMoney(
 
-			@RequestBody TransactionRequest request) {
+			@Valid	@RequestBody TransactionRequest request) {
 
 		String response = accountService.deposit(request);
 
@@ -51,7 +56,7 @@ public class AccountController {
 	@PostMapping("/withdraw")
 	public ResponseEntity<String> withdrawMoney(
 
-			@RequestBody TransactionRequest request) {
+			@Valid	@RequestBody TransactionRequest request) {
 
 		String response = accountService.withdraw(request);
 
@@ -71,10 +76,28 @@ public class AccountController {
 	@PostMapping("/transfer")
 	public ResponseEntity<String> transferMoney(
 
-			@RequestBody TransferRequest request) {
+			@Valid	@RequestBody TransferRequest request) {
 
 		String response = accountService.transferMoney(request);
 
 		return ResponseEntity.status(HttpStatus.OK).body(response);
+	}
+	
+	@GetMapping("/transactions/{accountNumber}")
+
+	public ResponseEntity<List<TransactionResponse>>
+	getTransactionHistory(
+
+	        @PathVariable String accountNumber
+	) {
+
+	    List<TransactionResponse> transactions =
+	            accountService.getTransactionHistory(
+	                    accountNumber
+	            );
+
+	    return ResponseEntity
+	            .status(HttpStatus.OK)
+	            .body(transactions);
 	}
 }
