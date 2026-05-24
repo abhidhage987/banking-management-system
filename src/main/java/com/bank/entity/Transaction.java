@@ -2,7 +2,6 @@ package com.bank.entity;
 
 import com.bank.enums.TransactionType;
 import jakarta.persistence.*;
-import lombok.*;
 
 import java.time.LocalDateTime;
 

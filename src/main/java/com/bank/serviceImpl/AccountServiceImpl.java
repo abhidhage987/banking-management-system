@@ -1,6 +1,7 @@
 package com.bank.serviceImpl;
 
 import com.bank.dto.AccountRequest;
+import org.springframework.cache.annotation.Cacheable;
 import com.bank.entity.Account;
 import com.bank.entity.User;
 import com.bank.enums.AccountStatus;
@@ -15,6 +16,8 @@ import com.bank.enums.TransactionType;
 import com.bank.exception.InsufficientBalanceException;
 import com.bank.exception.ResourceNotFoundException;
 import com.bank.repository.TransactionRepository;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 
 import org.springframework.transaction.annotation.Transactional;
 
@@ -69,38 +72,69 @@ public class AccountServiceImpl implements AccountService {
 	}
 
 	@Override
+
+	@CacheEvict(
+	        value = "accountBalance",
+	        key = "#request.accountNumber"
+	)
+
 	public String deposit(TransactionRequest request) {
 
-		Account account = accountRepository.findByAccountNumber(request.getAccountNumber())
-				.orElseThrow(() -> new ResourceNotFoundException("Account not found"));
+	    Account account = accountRepository
+	            .findByAccountNumber(request.getAccountNumber())
+	            .orElseThrow(() ->
+	                    new ResourceNotFoundException(
+	                            "Account not found"
+	                    ));
 
-		account.setBalance(account.getBalance() + request.getAmount());
+	    account.setBalance(
+	            account.getBalance() + request.getAmount()
+	    );
 
-		accountRepository.save(account);
+	    accountRepository.save(account);
 
-		return "Amount Deposited Successfully";
+	    return "Amount Deposited Successfully";
 	}
 
 	@Override
+
+	@CacheEvict(
+	        value = "accountBalance",
+	        key = "#request.accountNumber"
+	)
+
 	public String withdraw(TransactionRequest request) {
 
-		Account account = accountRepository.findByAccountNumber(request.getAccountNumber())
-				.orElseThrow(() -> new ResourceNotFoundException("Account not found"));
+	    Account account = accountRepository
+	            .findByAccountNumber(request.getAccountNumber())
+	            .orElseThrow(() ->
+	                    new ResourceNotFoundException(
+	                            "Account not found"
+	                    ));
 
-		if (account.getBalance() < request.getAmount()) {
+	    if(account.getBalance() < request.getAmount()) {
 
-			throw new InsufficientBalanceException("Insufficient Balance");
-		}
+	        throw new InsufficientBalanceException(
+	                "Insufficient Balance"
+	        );
+	    }
 
-		account.setBalance(account.getBalance() - request.getAmount());
+	    account.setBalance(
+	            account.getBalance() - request.getAmount()
+	    );
 
-		accountRepository.save(account);
+	    accountRepository.save(account);
 
-		return "Amount Withdrawn Successfully";
+	    return "Amount Withdrawn Successfully";
 	}
 
 	@Override
+
+	@Cacheable(value = "accountBalance", key = "#accountNumber")
+
 	public Double checkBalance(String accountNumber) {
+
+		System.out.println("Fetching Balance From Database...");
 
 		Account account = accountRepository.findByAccountNumber(accountNumber)
 				.orElseThrow(() -> new ResourceNotFoundException("Account not found"));
@@ -109,8 +143,23 @@ public class AccountServiceImpl implements AccountService {
 	}
 
 	@Override
+
 	@Transactional
 
+	@Caching(
+	        evict = {
+
+	                @CacheEvict(
+	                        value = "accountBalance",
+	                        key = "#request.senderAccount"
+	                ),
+
+	                @CacheEvict(
+	                        value = "accountBalance",
+	                        key = "#request.receiverAccount"
+	                )
+	        }
+	)
 	public String transferMoney(TransferRequest request) {
 
 		Account senderAccount = accountRepository.findByAccountNumber(request.getSenderAccount())
