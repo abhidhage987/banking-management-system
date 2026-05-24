@@ -9,6 +9,14 @@ import com.bank.repository.UserRepository;
 import com.bank.service.AccountService;
 import org.springframework.stereotype.Service;
 import com.bank.dto.TransactionRequest;
+import com.bank.dto.TransferRequest;
+import com.bank.entity.Transaction;
+import com.bank.enums.TransactionType;
+import com.bank.repository.TransactionRepository;
+
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 import java.util.Random;
 
@@ -18,14 +26,16 @@ public class AccountServiceImpl implements AccountService {
 
     private final AccountRepository accountRepository;
     private final UserRepository userRepository;
+    private final TransactionRepository transactionRepository;
 
     public AccountServiceImpl(AccountRepository accountRepository,
-                              UserRepository userRepository) {
+            UserRepository userRepository,
+            TransactionRepository transactionRepository) {
 
-        this.accountRepository = accountRepository;
-        this.userRepository = userRepository;
-    }
-
+this.accountRepository = accountRepository;
+this.userRepository = userRepository;
+this.transactionRepository = transactionRepository;
+}
     @Override
     public String createAccount(AccountRequest request, String email) {
 
@@ -102,6 +112,55 @@ public class AccountServiceImpl implements AccountService {
                         new RuntimeException("Account not found"));
 
         return account.getBalance();
+    }
+    
+    @Override
+    @Transactional
+
+    public String transferMoney(TransferRequest request) {
+
+        Account senderAccount = accountRepository
+                .findByAccountNumber(request.getSenderAccount())
+                .orElseThrow(() ->
+                        new RuntimeException("Sender Account Not Found"));
+
+        Account receiverAccount = accountRepository
+                .findByAccountNumber(request.getReceiverAccount())
+                .orElseThrow(() ->
+                        new RuntimeException("Receiver Account Not Found"));
+
+        
+        if(senderAccount.getBalance() < request.getAmount()) {
+
+            throw new RuntimeException("Insufficient Balance");
+        }
+
+       
+        senderAccount.setBalance(
+                senderAccount.getBalance() - request.getAmount()
+        );
+
+        
+        receiverAccount.setBalance(
+                receiverAccount.getBalance() + request.getAmount()
+        );
+
+        
+        accountRepository.save(senderAccount);
+        accountRepository.save(receiverAccount);
+
+        
+        Transaction transaction = new Transaction();
+
+        transaction.setSenderAccount(request.getSenderAccount());
+        transaction.setReceiverAccount(request.getReceiverAccount());
+        transaction.setAmount(request.getAmount());
+        transaction.setTransactionType(TransactionType.TRANSFER);
+        transaction.setTransactionDate(LocalDateTime.now());
+
+        transactionRepository.save(transaction);
+
+        return "Money Transferred Successfully";
     }
     
 }
