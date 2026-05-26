@@ -42,7 +42,14 @@ public class AuthServiceImpl implements AuthService {
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setMobile(request.getMobile());
-        user.setRole(UserRole.CUSTOMER);
+        user.setRole(
+
+        		
+        		// for learning Purpose This approach
+                UserRole.valueOf(
+                        request.getRole().toUpperCase()
+                )
+        );
 
         userRepository.save(user);
 

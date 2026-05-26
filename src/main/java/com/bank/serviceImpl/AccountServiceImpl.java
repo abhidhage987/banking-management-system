@@ -46,24 +46,58 @@ public class AccountServiceImpl implements AccountService {
 	}
 
 	@Override
-	public String createAccount(AccountRequest request, String email) {
 
-		User user = userRepository.findByEmail(email)
-				.orElseThrow(() -> new ResourceNotFoundException("User not found"));
+	public String createAccount(
+	        AccountRequest request,
+	        String email
+	) {
 
-		Account account = new Account();
+	   
 
-		account.setAccountNumber(generateAccountNumber());
-		account.setBalance(request.getInitialBalance());
-		account.setAccountType(request.getAccountType());
-		account.setStatus(AccountStatus.ACTIVE);
-		account.setUser(user);
+	    User user = userRepository
 
-		accountRepository.save(account);
+	            .findByEmail(email)
 
-		return "Account Created Successfully";
+	            .orElseThrow(() ->
+
+	                    new ResourceNotFoundException(
+	                            "User not found"
+	                    )
+	            );
+
+	    
+
+	    Account account = new Account();
+
+	    
+
+	    account.setAccountNumber(
+	            generateAccountNumber()
+	    );
+
+	    
+
+	    account.setBalance(
+	            request.getInitialBalance()
+	    );
+
+	    account.setAccountType(
+	            request.getAccountType()
+	    );
+
+	    account.setStatus(
+	            AccountStatus.ACTIVE
+	    );
+
+	    
+
+	    account.setUser(user);
+
+	    
+	    accountRepository.save(account);
+
+	    return "Account Created Successfully";
 	}
-
 	private String generateAccountNumber() {
 
 		Random random = new Random();

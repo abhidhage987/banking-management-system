@@ -2,36 +2,60 @@ package com.bank.security;
 
 import com.bank.entity.User;
 import com.bank.repository.UserRepository;
+
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.*;
+
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 
 @Service
 
-public class CustomUserDetailsService implements UserDetailsService {
+public class CustomUserDetailsService
+        implements UserDetailsService {
 
     private final UserRepository userRepository;
 
-    public CustomUserDetailsService(UserRepository userRepository) {
+    public CustomUserDetailsService(
+            UserRepository userRepository
+    ) {
 
         this.userRepository = userRepository;
     }
 
     @Override
-    public UserDetails loadUserByUsername(String email)
-            throws UsernameNotFoundException {
+    public UserDetails loadUserByUsername(
+            String email
+    ) throws UsernameNotFoundException {
 
-        User user = userRepository.findByEmail(email)
+        User user = userRepository
+                .findByEmail(email)
+
                 .orElseThrow(() ->
-                        new UsernameNotFoundException("User not found"));
+
+                        new UsernameNotFoundException(
+                                "User not found"
+                        )
+                );
 
         return new org.springframework.security.core.userdetails.User(
+
                 user.getEmail(),
+
                 user.getPassword(),
+
                 Collections.singleton(
-                        new SimpleGrantedAuthority(user.getRole().name())
+
+                        new SimpleGrantedAuthority(
+
+                                "ROLE_" +
+                                        user.getRole().name()
+                        )
                 )
         );
     }

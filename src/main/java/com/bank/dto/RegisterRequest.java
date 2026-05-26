@@ -17,6 +17,17 @@ public class RegisterRequest {
     @NotBlank(message = "Mobile number is required")
     private String mobile;
 
+    private String role;
+    
+    
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
+    
     public RegisterRequest() {
     }
 
